@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Skiff Ladder Game — Full Features</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f3f6f9;
+    margin: 20px;
+    text-align: center;
+    color: #222;
+  }
+  h1 {
+    margin-bottom: 8px;
+  }
+  #rulesToggle {
+    margin: 10px 0 18px;
+    cursor: pointer;
+    color: #e94e77;
+    font-weight: 600;
+    user-select: none;
+  }
+  #rules {
+    max-width: 700px;
+    margin: 0 auto 20px;
+    background: #fff9f9;
+    border: 1px solid #e5b1b8;
+    border-radius: 10px;
+    padding: 15px 20px;
+    text-align: left;
+    line-height: 1.5;
+    color: #5c2b32;
+    display: none;
+  }
+  #mode-select, #difficulty-select {
+    margin-bottom: 15px;
+  }
+  #game {
+    display: flex;
+    justify-content: center;
+    gap: 50px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .player {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    width: 190px;
+    box-shadow: 0 4px 8px rgb(0 0 0 / 0.1);
+    position: relative;
+  }
+  .player h2 {
+    margin-top: 0;
+    font-weight: 700;
+    color: #444;
+  }
+  #ladder {
+    position: relative;
+    width: 90px;
+    height: 330px;
+    background: linear-gradient(to bottom, #bba96d 0%, #8a7e3d 100%);
+    border-radius: 14px;
+    box-shadow: inset 0 0 8px #7a6b2a;
+  }
+  .step {
+    position: absolute;
+    left: 0;
+    width: 90px;
+    height: 30px;
+    border-top: 2px solid #6a5d2a;
+  }
+  .step:nth-child(1)  { bottom: 0; }
+  .step:nth-child(2)  { bottom: 30px; }
+  .step:nth-child(3)  { bottom: 60px; }
+  .step:nth-child(4)  { bottom: 90px; }
+  .step:nth-child(5)  { bottom: 120px; }
+  .step:nth-child(6)  { bottom: 150px; }
+  .step:nth-child(7)  { bottom: 180px; }
+  .step:nth-child(8)  { bottom: 210px; }
+  .step:nth-child(9)  { bottom: 240px; }
+  .step:nth-child(10) { bottom: 270px; }
+  .step:nth-child(11) { bottom: 300px; border-top: none; }
+
+  #ball {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background: #e94e77;
+    border-radius: 50%;
+    left: 30px;
+    border: 3px solid #9b3558;
+    box-shadow: 0 0 10px #e94e77cc;
+    transition: bottom 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  input[type="number"], select {
+    width: 70px;
+    padding: 6px;
+    font-size: 17px;
+    border: 1.5px solid #ccc;
+    border-radius: 6px;
+    text-align: center;
+    margin-top: 8px;
+    transition: border-color 0.3s;
+  }
+  input[type="number"]:focus, select:focus {
+    border-color: #e94e77;
+    outline: none;
+  }
+  button {
+    margin-top: 15px;
+    padding: 10px 22px;
+    font-size: 17px;
+    cursor: pointer;
+    background-color: #e94e77;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 3px 7px #d13c66;
+    transition: background-color 0.3s;
+  }
+  button:disabled {
+    background-color: #aaa;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+  button:hover:not(:disabled) {
+    background-color: #d13c66;
+  }
+  #message {
+    margin-top: 22px;
+    font-weight: 700;
+    font-size: 18px;
+    min-height: 28px;
+    color: #333;
+  }
+  #stats {
+    margin-top: 15px;
+    font-size: 16px;
+    color: #555;
+  }
+  #controls {
+    margin-top: 20px;
+  }
+  #leaderboard {
+    margin-top: 25px;
+    background: white;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgb(0 0 0 / 0.1);
+    padding: 12px 20px;
+  }
+  #leaderboard h3 {
+    margin-top: 0;
+  }
+  #leaderboard ol {
+    padding-left: 20px;
+    text-align: left;
+  }
+
+  /* Мобильная адаптация */
+  @media (max-width: 600px) {
+    #game {
+      flex-direction: column;
+      align-items: center;
+    }
+    .player {
+      width: 90vw;
+      max-width: 350px;
+      margin-bottom: 15px;
+    }
+    #ladder {
+      margin: 15px 0;
+    }
+    #rules {
+      max-width: 90vw;
+      padding: 10px 14px;
+      font-size: 14px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<h1>Skiff Ladder Game</h1>
+
+<div id="rulesToggle" tabindex="0" role="button" aria-expanded="false" aria-controls="rules" aria-label="Toggle game rules">Show Rules ▼</div>
+<div id="rules" role="region" aria-live="polite">
+  <h2>Game Rules & Instructions</h2>
+  <ul>
+    <li>The game is played by two players (Player 1 and Player 2 or Bot).</li>
+    <li>Each player starts with <strong>50 points</strong>.</li>
+    <li>The ball starts in the middle of the ladder (position 5 of 10 steps).</li>
+    <li>On each turn, the current player places a <em>bet</em> — a number of points they risk (minimum 1, maximum the points they have).</li>
+    <li>After both players have placed bets, points are deducted from their totals accordingly.</li>
+    <li>The player who places a higher bet moves the ball one step in their favor:</li>
+    <ul>
+      <li>If Player 1 wins the round, ball moves <strong>up</strong> (towards Player 1's victory).</li>
+      <li>If Player 2 or Bot wins, ball moves <strong>down</strong> (towards Player 2's or Bot's victory).</li>
+      <li>If bets are equal, the ball stays in place.</li>
+    </ul>
+    <li>The first player to move the ball to the top (position 10) or bottom (position 0) wins the game.</li>
+    <li>If a player runs out of points before the ball reaches either end, the other player wins.</li>
+    <li>You have 15 seconds per turn to place your bet; if time runs out, a minimum bet of 1 is automatically placed for you.</li>
+    <li>In Player vs Bot mode, you can choose the difficulty level: Easy, Medium, or Hard.</li>
+  </ul>
+  <p>Good luck and enjoy the game!</p>
+</div>
+
+<div id="mode-select" role="radiogroup" aria-label="Game mode selection">
+  <label><input type="radio" name="mode" value="pvp" checked /> Player vs Player</label>
+  &nbsp;&nbsp;&nbsp;
+  <label><input type="radio" name="mode" value="pve" /> Player vs Bot</label>
+</div>
+
+<div id="difficulty-select" style="display:none;">
+  Difficulty:
+  <select id="difficulty" aria-label="Select bot difficulty">
+    <option value="easy">Easy</option>
+    <option value="medium" selected>Medium</option>
+    <option value="hard">Hard</option>
+  </select>
+</div>
+
+<div id="game" aria-live="polite">
+  <div class="player" id="player1">
+    <h2>Player 1</h2>
+    <div>Points: <span id="score1" aria-live="polite">50</span></div>
+    <label>
+      Your Bet:
+      <input type="number" id="bet1" min="1" max="50" aria-label="Player 1 bet" />
+    </label>
+    <br/>
+    <button id="btn1" aria-label="Player 1 place bet">Place Bet</button>
+  </div>
+
+  <div id="ladder" aria-label="Ladder with ball position" role="img" aria-roledescription="ladder with ball">
+    <div class="step"></div><div class="step"></div><div class="step"></div>
+    <div class="step"></div><div class="step"></div><div class="step"></div>
+    <div class="step"></div><div class="step"></div><div class="step"></div>
+    <div class="step"></div><div class="step"></div>
+    <div id="ball" style="bottom: 150px;" aria-label="Ball position"></div>
+  </div>
+
+  <div class="player" id="player2">
+    <h2 id="player2-name">Player 2</h2>
+    <div>Points: <span id="score2" aria-live="polite">50</span></div>
+    <label>
+      Your Bet:
+      <input type="number" id="bet2" min="1" max="50" disabled aria-label="Player 2 bet" />
+    </label>
+    <br/>
+    <button id="btn2" disabled aria-label="Player 2 place bet">Place Bet</button>
+  </div>
+</div>
+
+<div id="message" role="alert" aria-live="assertive"></div>
+<div id="stats" aria-live="polite"></div>
+
+<div id="controls">
+  <button id="pauseBtn">Pause</button>
+  <button id="restartBtn">Restart</button>
+</div>
+
+<div id="leaderboard" aria-label="Leaderboard" role="region" style="display:none;">
+  <h3>Leaderboard (Wins)</h3>
+  <ol id="leaderboardList"></ol>
+</div>
+
+<!-- Audio elements for sounds -->
+<audio id="sound-place" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
+<audio id="sound-win" src="https://actions.google.com/sounds/v1/cartoon/clang.ogg" preload="auto"></audio>
+<audio id="sound-lose" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_down.ogg" preload="auto"></audio>
+<audio id="sound-tie" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+<script>
+  // Переменные
+  const maxPoints = 50;
+  const totalSteps = 11; // ступеней на лестнице
+  let ballPos = 5; // начальная позиция шара (0..10)
+  let scores = { p1: maxPoints, p2: maxPoints };
+  let bets = { p1: null, p2: null };
+  let currentPlayer = 'p1';
+  let mode = 'pvp'; // 'pvp' или 'pve'
+  let difficulty = 'medium'; // easy, medium, hard
+  let paused = false;
+  let gameOver = false;
+  let botThinking = false;
+
+  const betInput1 = document.getElementById('bet1');
+  const betInput2 = document.getElementById('bet2');
+  const btn1 = document.getElementById('btn1');
+  const btn2 = document.getElementById('btn2');
+  const score1 = document.getElementById('score1');
+  const score2 = document.getElementById('score2');
+  const message = document.getElementById('message');
+  const stats = document.getElementById('stats');
+  const ball = document.getElementById('ball');
+  const player2NameEl = document.getElementById('player2-name');
+
+  const pauseBtn = document.getElementById('pauseBtn');
+  const restartBtn = document.getElementById('restartBtn');
+
+  const modeInputs = document.querySelectorAll('input[name="mode"]');
+  const difficultySelect = document.getElementById('difficulty-select');
+  const difficultyInput = document.getElementById('difficulty');
+
+  const soundPlace = document.getElementById('sound-place');
+  const soundWin = document.getElementById('sound-win');
+  const soundLose = document.getElementById('sound-lose');
+  const soundTie = document.getElementById('sound-tie');
+
+  const leaderboardEl = document.getElementById('leaderboard');
+  const leaderboardList = document.getElementById('leaderboardList');
+
+  let turnCount = 0;
+  let timerInterval = null;
+  const turnTime = 15; // секунд на ход
+  let turnTimer = turnTime;
+  let botTimeout = null;
+
+  // Локальный рекорд
+  let leaderboard = {
+    p1Wins: 0,
+    p2Wins: 0,
+    botWins: 0
+  };
+
+  // Загрузка рекорда из localStorage
+  function loadLeaderboard() {
+    try {
+      const data = localStorage.getItem('skiffLeaderboard');
+      if (data) leaderboard = JSON.parse(data);
+    } catch {
+      leaderboard = { p1Wins: 0, p2Wins: 0, botWins: 0 };
+    }
+  }
+
+  // Сохранение рекорда
+  function saveLeaderboard() {
+    localStorage.setItem('skiffLeaderboard', JSON.stringify(leaderboard));
+  }
+
+  // Обновление таблицы рекордов в UI
+  function showLeaderboard() {
+    leaderboardEl.style.display = 'block';
+    leaderboardList.innerHTML = `
+      <li>Player 1: ${leaderboard.p1Wins} wins</li>
+      <li>${mode === 'pve' ? 'Bot' : 'Player 2'}: ${mode === 'pve' ? leaderboard.botWins : leaderboard.p2Wins} wins</li>
+    `;
+  }
+
+  // Обновление таблицы рекордов после победы
+  function updateLeaderboard(winner) {
+    if (winner === 'p1') leaderboard.p1Wins++;
+    else if (winner === 'p2') leaderboard.p2Wins++;
+    else if (winner === 'bot') leaderboard.botWins++;
+    saveLeaderboard();
+    showLeaderboard();
+  }
+
+  // Обновить UI и управление интерфейсом
+  function updateUI() {
+    score1.textContent = scores.p1;
+    score2.textContent = scores.p2;
+
+    betInput1.max = scores.p1;
+    betInput2.max = scores.p2;
+
+    betInput1.value = '';
+    betInput2.value = '';
+
+    if (paused) {
+      betInput1.disabled = true;
+      btn1.disabled = true;
+      betInput2.disabled = true;
+      btn2.disabled = true;
+      message.textContent = "Game is paused";
+      stopTurnTimer();
+      if (botTimeout) clearTimeout(botTimeout);
+      botThinking = false;
+      updateStats();
+      return;
+    }
+
+    if (gameOver) {
+      disableAll();
+      stopTurnTimer();
+      if (botTimeout) clearTimeout(botTimeout);
+      botThinking = false;
+      updateStats();
+      return;
+    }
+
+    if (currentPlayer === 'p1') {
+      betInput1.disabled = false;
+      btn1.disabled = false;
+      betInput2.disabled = true;
+      btn2.disabled = true;
+      message.textContent = "Player 1, place your bet";
+      startTurnTimer();
+      if (botTimeout) {
+        clearTimeout(botTimeout);
+        botThinking = false;
+      }
+    } else {
+      betInput1.disabled = true;
+      btn1.disabled = true;
+      if (mode === 'pve') {
+        betInput2.disabled = true;
+        btn2.disabled = true;
+        message.textContent = "Bot is thinking...";
+        stopTurnTimer();
+
+        if (botTimeout) clearTimeout(botTimeout);
+        if (!botThinking) {
+          botThinking = true;
+          botTimeout = setTimeout(() => {
+            botThinking = false;
+            botMove();
+          }, 1200);
+        }
+      } else {
+        betInput2.disabled = false;
+        btn2.disabled = false;
+        message.textContent = "Player 2, place your bet";
+        startTurnTimer();
+        if (botTimeout) {
+          clearTimeout(botTimeout);
+          botThinking = false;
+        }
+      }
+    }
+
+    ball.style.bottom = (ballPos * 30) + 'px';
+    updateStats();
+  }
+
+  // Обновить статистику
+  function updateStats() {
+    stats.textContent = `Turn: ${turnCount}, Ball position: ${ballPos} / 10`;
+  }
+
+  // Запуск таймера хода
+  function startTurnTimer() {
+    turnTimer = turnTime;
+    updateTimerDisplay();
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      turnTimer--;
+      updateTimerDisplay();
+      if (turnTimer <= 0) {
+        clearInterval(timerInterval);
+        autoBet();
+      }
+    }, 1000);
+  }
+
+  // Обновить отображение таймера
+  function updateTimerDisplay() {
+    if (currentPlayer === 'p1') {
+      btn1.textContent = `Place Bet (${turnTimer}s)`;
+    } else {
+      btn2.textContent = `Place Bet (${turnTimer}s)`;
+    }
+  }
+
+  // Остановить таймер хода
+  function stopTurnTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    btn1.textContent = "Place Bet";
+    btn2.textContent = "Place Bet";
+  }
+
+  // Автоматическая ставка при таймауте
+  function autoBet() {
+    if (paused || gameOver) return;
+    if (currentPlayer === 'p1') {
+      if (!bets.p1) {
+        bets.p1 = 1;
+        soundPlace.play();
+        message.textContent = "Player 1 auto-bet 1 point.";
+        endTurn();
+      }
+    } else {
+      if (mode === 'pve') {
+        // Бот делает ход, уже реализовано в botMove()
+      } else {
+        if (!bets.p2) {
+          bets.p2 = 1;
+          soundPlace.play();
+          message.textContent = "Player 2 auto-bet 1 point.";
+          endTurn();
+        }
+      }
+    }
+  }
+
+  // Функция для окончания хода после ставки
+  function endTurn() {
+    if (currentPlayer === 'p1') {
+      if (bets.p1 == null) return;
+      currentPlayer = 'p2';
+      updateUI();
+    } else {
+      if (bets.p2 == null) return;
+      turnCount++;
+      resolveRound();
+    }
+  }
+
+  // Разрешение результата раунда
+  function resolveRound() {
+    // Уменьшаем очки
+    scores.p1 -= bets.p1;
+    scores.p2 -= bets.p2;
+
+    soundPlace.play();
+
+    if (bets.p1 > bets.p2) {
+      // Игрок 1 выигрывает раунд, двигает мяч вверх
+      ballPos = Math.min(ballPos + 1, 10);
+      message.textContent = "Player 1 wins the round! Ball moves UP.";
+      soundWin.play();
+    } else if (bets.p1 < bets.p2) {
+      // Игрок 2/бот выигрывает, мяч вниз
+      ballPos = Math.max(ballPos - 1, 0);
+      if (mode === 'pve') message.textContent = "Bot wins the round! Ball moves DOWN.";
+      else message.textContent = "Player 2 wins the round! Ball moves DOWN.";
+      soundLose.play();
+    } else {
+      // Ничья
+      message.textContent = "Tie! Ball stays.";
+      soundTie.play();
+    }
+
+    bets.p1 = null;
+    bets.p2 = null;
+
+    updateUI();
+
+    // Проверка победы
+    if (ballPos === 10) {
+      gameOver = true;
+      message.textContent = "Player 1 WINS the game!";
+      soundWin.play();
+      updateLeaderboard('p1');
+      return;
+    } else if (ballPos === 0) {
+      gameOver = true;
+      if (mode === 'pve') {
+        message.textContent = "Bot WINS the game!";
+        updateLeaderboard('bot');
+      } else {
+        message.textContent = "Player 2 WINS the game!";
+        updateLeaderboard('p2');
+      }
+      soundWin.play();
+      return;
+    }
+
+    // Проверка очков
+    if (scores.p1 <= 0) {
+      gameOver = true;
+      if (mode === 'pve') {
+        message.textContent = "Player 1 has no points left. Bot wins!";
+        updateLeaderboard('bot');
+      } else {
+        message.textContent = "Player 1 has no points left. Player 2 wins!";
+        updateLeaderboard('p2');
+      }
+      soundLose.play();
+      return;
+    }
+    if (scores.p2 <= 0) {
+      gameOver = true;
+      message.textContent = "Player 2 has no points left. Player 1 wins!";
+      updateLeaderboard('p1');
+      soundWin.play();
+      return;
+    }
+
+    // Следующий ход — игрок 1
+    currentPlayer = 'p1';
+    updateUI();
+  }
+
+  // Бот — логика хода
+  function botMove() {
+    if (gameOver || paused) return;
+
+    // Решаем ставку бота в зависимости от сложности
+    let bet;
+    let maxBet = scores.p2;
+    let diffBall = ballPos - 5; // Положение мяча относительно центра
+
+    switch (difficulty) {
+      case 'easy':
+        bet = Math.max(1, Math.floor(Math.random() * maxBet / 2));
+        break;
+      case 'medium':
+        // Если мяч ближе к боту, ставка выше
+        bet = Math.max(1, Math.min(maxBet, 3 + Math.floor((5 - ballPos) / 2)));
+        // Немного рандома
+        if (Math.random() < 0.4) bet = Math.min(maxBet, bet + Math.floor(Math.random() * 3));
+        break;
+      case 'hard':
+        // Считаем стратегически
+        if (ballPos <= 3) {
+          bet = Math.min(maxBet, 5 + (3 - ballPos) * 3);
+        } else if (ballPos >= 7) {
+          bet = Math.max(1, Math.floor(maxBet / 5));
+        } else {
+          bet = Math.max(1, Math.min(maxBet, 5));
+        }
+        break;
+      default:
+        bet = 1;
+    }
+    // Убедимся, что не ставим больше, чем есть
+    bet = Math.min(bet, maxBet);
+
+    bets.p2 = bet;
+    soundPlace.play();
+
+    message.textContent = `Bot bets ${bet} points.`;
+    // Делаем задержку и завершаем ход
+    setTimeout(() => {
+      endTurn();
+    }, 700);
+  }
+
+  // Отключить все input и кнопки
+  function disableAll() {
+    betInput1.disabled = true;
+    btn1.disabled = true;
+    betInput2.disabled = true;
+    btn2.disabled = true;
+  }
+
+  // Обработка нажатий кнопок игроков
+  btn1.addEventListener('click', () => {
+    if (paused || gameOver || currentPlayer !== 'p1') return;
+    const val = parseInt(betInput1.value);
+    if (!val || val < 1 || val > scores.p1) {
+      alert(`Invalid bet. Enter a number between 1 and ${scores.p1}.`);
+      return;
+    }
+    bets.p1 = val;
+    soundPlace.play();
+    endTurn();
+  });
+
+  btn2.addEventListener('click', () => {
+    if (paused || gameOver || currentPlayer !== 'p2') return;
+    const val = parseInt(betInput2.value);
+    if (!val || val < 1 || val > scores.p2) {
+      alert(`Invalid bet. Enter a number between 1 and ${scores.p2}.`);
+      return;
+    }
+    bets.p2 = val;
+    soundPlace.play();
+    endTurn();
+  });
+
+  // Кнопки паузы и рестарта
+  pauseBtn.addEventListener('click', () => {
+    paused = !paused;
+    pauseBtn.textContent = paused ? "Resume" : "Pause";
+    updateUI();
+  });
+
+  restartBtn.addEventListener('click', () => {
+    resetGame();
+  });
+
+  // Смена режима игры (PVP/PVE)
+  modeInputs.forEach(input => {
+    input.addEventListener('change', () => {
+      mode = input.value;
+      difficultySelect.style.display = (mode === 'pve') ? 'block' : 'none';
+      player2NameEl.textContent = (mode === 'pve') ? 'Bot' : 'Player 2';
+      resetGame();
+      showLeaderboard();
+    });
+  });
+
+  // Смена сложности бота
+  difficultyInput.addEventListener('change', () => {
+    difficulty = difficultyInput.value;
+    resetGame();
+  });
+
+  // Сброс игры
+  function resetGame() {
+    paused = false;
+    gameOver = false;
+    botThinking = false;
+    ballPos = 5;
+    scores = { p1: maxPoints, p2: maxPoints };
+    bets = { p1: null, p2: null };
+    currentPlayer = 'p1';
+    turnCount = 0;
+    pauseBtn.textContent = "Pause";
+    updateUI();
+  }
+
+  // Показ таблицы рекордов при загрузке
+  loadLeaderboard();
+  showLeaderboard();
+
+  // Инициализация UI
+  updateUI();
+
+  // Правила: переключатель видимости
+  const rulesToggle = document.getElementById('rulesToggle');
+  const rulesDiv = document.getElementById('rules');
+  rulesToggle.addEventListener('click', () => {
+    const expanded = rulesToggle.getAttribute('aria-expanded') === 'true';
+    rulesToggle.setAttribute('aria-expanded', !expanded);
+    if (expanded) {
+      rulesDiv.style.display = 'none';
+      rulesToggle.textContent = "Show Rules ▼";
+    } else {
+      rulesDiv.style.display = 'block';
+      rulesToggle.textContent = "Hide Rules ▲";
+    }
+  });
+  rulesToggle.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      rulesToggle.click();
+    }
+  });
+</script>
+<script>
+  // Дополнительные улучшения и обработчики клавиш
+
+  // Поддержка клавиши Enter для ставок (игрок 1 и 2)
+  betInput1.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      btn1.click();
+    }
+  });
+  betInput2.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      btn2.click();
+    }
+  });
+
+  // Обработка смены размера окна — можно добавить, если нужно
+  window.addEventListener('resize', () => {
+    // При необходимости можно подстроить UI, сейчас адаптив через CSS
+  });
+
+  // Анимация ставки — подсветка ставки игрока
+  function animateBet(player) {
+    const playerDiv = document.getElementById(player === 'p1' ? 'player1' : 'player2');
+    playerDiv.style.transition = 'background-color 0.3s';
+    playerDiv.style.backgroundColor = '#f9e6ea';
+    setTimeout(() => {
+      playerDiv.style.backgroundColor = 'white';
+    }, 350);
+  }
+
+  // Вызов анимации при ставке
+  btn1.addEventListener('click', () => {
+    animateBet('p1');
+  });
+  btn2.addEventListener('click', () => {
+    animateBet('p2');
+  });
+
+  // Восстановление фокуса на текущем игроке после ходов
+  function focusCurrentBet() {
+    if (paused || gameOver) return;
+    if (currentPlayer === 'p1') betInput1.focus();
+    else if (currentPlayer === 'p2' && mode === 'pvp') betInput2.focus();
+  }
+
+  // После обновления UI даём фокус
+  function updateUI() {
+    score1.textContent = scores.p1;
+    score2.textContent = scores.p2;
+
+    betInput1.max = scores.p1;
+    betInput2.max = scores.p2;
+
+    betInput1.value = '';
+    betInput2.value = '';
+
+    if (paused) {
+      betInput1.disabled = true;
+      btn1.disabled = true;
+      betInput2.disabled = true;
+      btn2.disabled = true;
+      message.textContent = "Game is paused";
+      stopTurnTimer();
+      if (botTimeout) clearTimeout(botTimeout);
+      botThinking = false;
+      updateStats();
+      return;
+    }
+
+    if (gameOver) {
+      disableAll();
+      stopTurnTimer();
+      if (botTimeout) clearTimeout(botTimeout);
+      botThinking = false;
+      updateStats();
+      return;
+    }
+
+    if (currentPlayer === 'p1') {
+      betInput1.disabled = false;
+      btn1.disabled = false;
+      betInput2.disabled = true;
+      btn2.disabled = true;
+      message.textContent = "Player 1, place your bet";
+      startTurnTimer();
+      if (botTimeout) {
+        clearTimeout(botTimeout);
+        botThinking = false;
+      }
+    } else {
+      betInput1.disabled = true;
+      btn1.disabled = true;
+      if (mode === 'pve') {
+        betInput2.disabled = true;
+        btn2.disabled = true;
+        message.textContent = "Bot is thinking...";
+        stopTurnTimer();
+
+        if (botTimeout) clearTimeout(botTimeout);
+        if (!botThinking) {
+          botThinking = true;
+          botTimeout = setTimeout(() => {
+            botThinking = false;
+            botMove();
+          }, 1200);
+        }
+      } else {
+        betInput2.disabled = false;
+        btn2.disabled = false;
+        message.textContent = "Player 2, place your bet";
+        startTurnTimer();
+        if (botTimeout) {
+          clearTimeout(botTimeout);
+          botThinking = false;
+        }
+      }
+    }
+
+    ball.style.bottom = (ballPos * 30) + 'px';
+    updateStats();
+    focusCurrentBet();
+  }
+
+  // Обновление UI вначале и после загрузки
+  updateUI();
+</script>
+</body>
+</html>
